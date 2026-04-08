@@ -63,17 +63,25 @@ typedef struct PyABIInfo {
 #define PyABIInfo_VAR(NAME) static PyABIInfo NAME = {0};
 #endif
 
+#ifndef _Py_ALIGNED_DEF
+#  if !defined(__alignas_is_defined) && defined(_MSC_VER)
+#     define _Py_ALIGNED_DEF(N, T) __declspec(align(N)) T
+#  else
+#     define _Py_ALIGNED_DEF(N, T) alignas(N) alignas(T) T
+#  endif
+#endif
+
 /* Shim structs, mirroring the stable ABI ("gil") and the
  * 3.14 free-threaded ABI ("ft")
  */
 
 struct ftcompat_gil_PyObject {
-    alignas(Py_ssize_t) alignas(4) Py_ssize_t ob_refcnt;
+    _Py_ALIGNED_DEF(4, Py_ssize_t) ob_refcnt;
     PyTypeObject *ob_type;
 };
 
 struct ftcompat_ft_PyObject {
-    alignas(uintptr_t) alignas(4) uintptr_t ob_tid;
+    _Py_ALIGNED_DEF(4, uintptr_t) ob_tid;
     uint16_t ob_flags;
     char /* PyMutex */ ob_mutex;
     uint8_t ob_gc_bits;
