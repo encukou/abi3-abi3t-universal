@@ -23,6 +23,8 @@ extension = Extension(
 class BdistUniversalWheel(bdist_wheel):
     def get_tag(self):
         impl, abi, plat_name = super().get_tag()
+        if plat_name.startswith('linux_'):
+            plat_name = plat_name.replace('linux_', 'manylinux1_', 1)
         return 'py3', 'none', plat_name
 
 class BuildUniversalExt(build_ext):
