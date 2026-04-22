@@ -2,21 +2,34 @@ on: [push, pull_request, workflow_dispatch]
 
 jobs:
   build:
-    name: Build wheel on ${{ matrix.os }}
+    name: "Build wheel: ${{ matrix.name }}"
     strategy:
       matrix:
-        os: [ubuntu-24.04, macos-latest, windows-latest]
+        include:
+        - name: linux
+          os: ubuntu-24.04
+          freethreaded: false
+        - name: macos
+          os: macos-latest
+          freethreaded: false
+        - name: windows-gil
+          os: windows-latest
+          freethreaded: false
+        - name: windows-t
+          os: windows-latest
+          freethreaded: true
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v6
     - uses: actions/setup-python@v6
       with:
         python-version: '3.15.0-alpha.8'
+        freethreaded: ${{ matrix.freethreaded }}
         cache: 'pip'
     - run: pip install build
     - run: python -m build --wheel
     - name: Run auditwheel
-      if: "matrix.os == 'ubuntu-24.04'"
+      if: "matrix.name == 'linux'"
       run: |
         pip install auditwheel
         python -m auditwheel -vv repair dist/* --wheel-dir repaired
@@ -25,23 +38,37 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-artifact@v6
       with:
-        name: wheel-${{ matrix.os }}
+        name: wheel-${{ matrix.name }}
         path: './dist/*.whl'
   test:
     name: "Test on ${{ matrix.os }}: ${{ matrix.python-version }} (${{ case(matrix.freethreaded, 'FT', 'GIL') }})"
     needs: build
     strategy:
       matrix:
-        os: [ubuntu-24.04, macos-latest, windows-latest]
+        name: [linux, macos, windows-gil, windows-t]
         python-version: ['3.13', '3.14', '3.15.0-alpha.8']
         freethreaded: [true, false]
+        include:
+        - name: linux
+          os: ubuntu-24.04
+        - name: macos
+          os: macos-latest
+        - name: windows-gil
+          os: windows-latest
+        - name: windows-t
+          os: windows-latest
+        exclude:
+        - name: windows-gil
+          freethreaded: true
+        - name: windows-t
+          freethreaded: false
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
     - name: Download wheel
       uses: actions/download-artifact@v8
       with:
-        name: wheel-${{ matrix.os }}
+        name: wheel-${{ matrix.name }}
     - uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
@@ -60,7 +87,7 @@ jobs:
         "
       shell: bash
   pypi-publish:
-    name: "Upload to PyPI: ${{ matrix.os }}"
+    name: "Upload to PyPI"
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
     runs-on: ubuntu-slim
     needs: test

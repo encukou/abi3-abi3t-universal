@@ -1,4 +1,5 @@
 import os
+import sys
 from importlib.machinery import EXTENSION_SUFFIXES
 
 from setuptools import setup
@@ -20,15 +21,30 @@ extension = Extension(
     ],
 )
 
+
 class BdistUniversalWheel(bdist_wheel):
     def get_tag(self):
         impl, abi, plat_name = super().get_tag()
+        impl = 'py3'
+        if sys.platform == 'win32':
+            if sys._is_gil_enabled():
+                impl = 'cp313'
+                abi = 'abi3'
+            else:
+                impl = 'cp313.cp314.cp315'
+                abi = 'cp313t.cp314t.cp315t'
+        else:
+            abi = 'none'
         if plat_name.startswith('linux_'):
             plat_name = plat_name.replace('linux_', 'manylinux1_', 1)
-        return 'py3', 'none', plat_name
+        return impl, abi, plat_name
+
 
 class BuildUniversalExt(build_ext):
     def get_ext_filename(self, *args, **kwargs):
+        if sys.platform == 'win32':
+            return super().get_ext_filename(*args, **kwargs)
+
         return ext_filename.replace('.abi3.', '.abi3t.')
 
 
