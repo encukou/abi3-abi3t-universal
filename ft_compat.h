@@ -195,7 +195,7 @@ FTCOMPAT_APPEND_MODNAME(PyInit_)(void)
     }
     else {
          if (!PyErr_Occurred()) {
-            PyErr_SetString(PyExc_ImportError, "Onknown object size");
+            PyErr_SetString(PyExc_ImportError, "Unknown object size");
          }
          return NULL;
     }
