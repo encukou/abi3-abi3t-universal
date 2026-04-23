@@ -40,14 +40,6 @@ class BdistUniversalWheel(bdist_wheel):
         return impl, abi, plat_name
 
 
-class BuildUniversalExt(build_ext):
-    def get_ext_filename(self, *args, **kwargs):
-        if sys.platform == 'win32':
-            return super().get_ext_filename(*args, **kwargs)
-
-        return ext_filename.replace('.abi3.', '.abi3t.')
-
-
 setup(
     ext_modules=[extension],
     cmdclass={'bdist_wheel': BdistUniversalWheel},
