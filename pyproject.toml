@@ -4,5 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = 'abi3-abi3t-universal'
-version = '0.1'
+version = '0.1.1'
+description = "Demo of wide Stable ABI compatibility."
+readme = "README.md"
 requires-python = '>=3.13'
+license = "CC0-1.0"
+license-files = ["LICEN[CS]E*"]
+
+[project.urls]
+Homepage = "https://github.com/encukou/abi3-abi3t-universal"
