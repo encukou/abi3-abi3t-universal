@@ -31,8 +31,8 @@ class BdistUniversalWheel(bdist_wheel):
                 impl = 'cp313'
                 abi = 'abi3'
             else:
-                impl = 'cp313.cp314.cp315'
-                abi = 'cp313t.cp314t.cp315t'
+                impl = 'cp313.cp314.cp315.cp316'
+                abi = 'cp313t.cp314t.cp315t.cp316t'
         else:
             abi = 'none'
         if plat_name.startswith('linux_'):

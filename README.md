@@ -5,8 +5,7 @@ GIL/free-threading variants.
 
 It targets pre-`abi3t` build and install tools; see Caveats below.
 
-CPython versions: 3.13, 3.14, and 3.15.0a8.
-(Note that the latter's ABI may change in 3.15.0b1.)
+CPython versions: 3.13, 3.14, and 3.15.0b1+.
 
 OSs: Linux (64-bit x86), macOS (universal2), Windows (64-bit x86)
 (Covering other CPU architectures is possible but would mostly just complicate
@@ -53,16 +52,17 @@ the built wheels are tagged a bit weirdly:
   - should be: abi3_abi3t_universal-0.1-**cp313**-**abi3.abi3t**-manylinux1_x86_64.manylinux_2_5_x86_64.whl
 
 - Mac:
-  - has: abi3_abi3t_universal-0.1-py3-**none**-macosx_10_15_universal2.whl
+  - has: abi3_abi3t_universal-0.1-**py3**-**none**-macosx_10_15_universal2.whl
   - should be: abi3_abi3t_universal-0.1-**cp313**-**abi3.abi3t**-macosx_10_15_universal2.whl
 
 - Windows GIL:
   - has: abi3_abi3t_universal-0.1-cp313-abi3-win_amd64.whl
   - which is right :)
 
-- Windows free-threading:
+- Windows free-threading (also compatible with 3.15+ GIL):
   - has: abi3_abi3t_universal-0.1-**cp313.cp314.cp315-cp313t.cp314t.cp315t**-win_amd64.whl
   - should be: abi3_abi3t_universal-0.1-**cp313-abi3t**-win_amd64.whl
+  - or: abi3_abi3t_universal-0.1-**cp315-abi3.abi3t**-win_amd64.whl
 
 
 ## Licence
