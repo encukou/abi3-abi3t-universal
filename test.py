@@ -3,6 +3,7 @@
 import sys
 import shlex
 import shutil
+import traceback
 import functools
 import subprocess
 from pathlib import Path
@@ -36,18 +37,29 @@ run(sys.executable, '-m', 'build', '--wheel', '-o', DISTDIR)
 
 [wheel] = DISTDIR.resolve().glob('*.whl')
 
+exceptions = []
 for pyver in '3.13', '3.13t', '3.14', '3.14t', '3.15', '3.15t', None:
-    if pyver:
-        outer_python = 'python' + pyver
-        VENVDIR = TESTDIR / f'venv_{pyver}'
-    else:
-        outer_python = sys.executable
-        VENVDIR = TESTDIR / f'venv_this'
-    run(outer_python, '--version')
-    run(outer_python, '-m', 'venv', VENVDIR)
-    venv_python = VENVDIR / 'bin/python'
-    run(venv_python, '-m', 'pip', 'install', wheel)
-    result = run(venv_python, TESTSCRIPT, stdout=subprocess.PIPE)
-    print(result.stdout)
-    if result.stdout.split() != ['0', '1', '2']:
-        raise AssertionError('bad output')
+    try:
+        if pyver:
+            outer_python = 'python' + pyver
+            VENVDIR = TESTDIR / f'venv_{pyver}'
+        else:
+            outer_python = sys.executable
+            VENVDIR = TESTDIR / f'venv_this'
+        run(outer_python, '--version')
+        run(outer_python, '-m', 'venv', VENVDIR)
+        venv_python = VENVDIR / 'bin/python'
+        run(venv_python, '-m', 'pip', 'install', wheel)
+        result = run(venv_python, TESTSCRIPT, stdout=subprocess.PIPE)
+        print(result.stdout)
+        if result.stdout.split() != ['0', '1', '2']:
+            raise AssertionError('bad output')
+    except Exception as e:
+        exceptions.append(e)
+        e.add_note(pyver)
+        print()
+        print(pyver)
+        traceback.print_exc()
+        print()
+if exceptions:
+    raise ExceptionGroup("Multiple errors occurred", exceptions)

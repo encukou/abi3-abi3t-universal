@@ -7,10 +7,16 @@
  * - include "ft_compat.h" (after <Python.h>)
  *
  * There are some limitations on the slots array:
- * - Slots added in PEP 793 (name, doc, methods, state_*, token) must come
- *   before any other slots.
+ * - Sub-slots (Py_slot_subslots, Py_mod_slots) must not be used, except for
+ *   a single optional `Py_mod_slots` used to set PyModuleDef.slots.
+ *   Any 3.14 slots (create, exec, gil, multiple_interpreters) need to be here.
+ * - Slots added in 3.15 (name, doc, methods, state_*, token, abi) must be
+ *   specified directly in the top-level PySlot array.
+ * - Additional slots (i.e. 3.16 & up) must be marked PySlot_OPTIONAL.
  * - Py_mod_token, if used, must be set to `&ftcompat_token` (which is defined
  *   in this header).
+ * - Do not use PySlot_INTPTR.
+ * - Everything must be static. Hovewer, the PySlot_STATIC flag is not checked.
  *
  * Note that the shim will call your PyModExport_* hook with NULL as the "spec"
  * argument.
@@ -32,36 +38,23 @@
 #error "This header requires Py_LIMITED_API"
 #endif
 
+#if PY_VERSION_HEX < 0x030f00b1
+#error "CPython 3.15.0b1 or above is required to build"
+#endif
+
 #ifndef FTCOMPAT_MODNAME
 #error "Define FTCOMPAT_MODNAME to the name of the extension before including this header"
 #endif
 
-/* Define some Python 3.15 API for Python versions that don't have it */
-
-#ifndef Py_mod_name
-#define Py_mod_abi 5
-#define Py_mod_name 6
-#define Py_mod_doc 7
-#define Py_mod_state_size 8
-#define Py_mod_methods 9
-#define Py_mod_state_traverse 10
-#define Py_mod_state_clear 11
-#define Py_mod_state_free 12
-#define Py_mod_token 13
-#endif
-#ifndef PyMODEXPORT_FUNC
-#define PyMODEXPORT_FUNC Py_EXPORTED_SYMBOL PyModuleDef_Slot*
-#endif
-#ifndef PyABIInfo_VAR
-typedef struct PyABIInfo {
-    uint8_t abiinfo_major_version;
-    uint8_t abiinfo_minor_version;
-    uint16_t flags;
-    uint32_t build_version;
-    uint32_t abi_version;
-} PyABIInfo;
-#define PyABIInfo_VAR(NAME) static PyABIInfo NAME = {0};
-#endif
+/* Always use old slot numbers */
+#undef Py_mod_create
+#undef Py_mod_exec
+#undef Py_mod_multiple_interpreters
+#undef Py_mod_gil
+#define Py_mod_create 1
+#define Py_mod_exec 2
+#define Py_mod_multiple_interpreters 3
+#define Py_mod_gil 4
 
 #ifndef _Py_ALIGNED_DEF
 #  if !defined(__alignas_is_defined) && defined(_MSC_VER)
@@ -209,42 +202,50 @@ FTCOMPAT_APPEND_MODNAME(PyInit_)(void)
 
     // Call the new export hook and construct a moduledef shim from it
 
-    PyModuleDef_Slot *slot = FTCOMPAT_APPEND_MODNAME(PyModExport_)(NULL);
+    PySlot *slot = FTCOMPAT_APPEND_MODNAME(PyModExport_)(NULL);
 
-    int copying_slots = 1;
-    for (/* slot set above */; slot->slot; slot++) {
-        switch (slot->slot) {
+    for (/* slot set above */; slot->sl_id; slot++) {
+        if (slot->sl_flags & PySlot_INTPTR) {
+            PyErr_SetString(
+                PyExc_SystemError,
+                "PySlot_INTPTR is not allowed.");
+            return NULL;
+        }
+        switch (slot->sl_id) {
         // Set PyModuleDef members from slots. These slots must come first.
-#       define COPYSLOT_CASE(SLOT, MEMBER, TYPE)                            \
+#       define COPYSLOT_CASE(SLOT, DEF_MEMBER, SL_MEMBER, TYPE)             \
             case SLOT:                                                      \
-                if (!copying_slots) {                                       \
-                    PyErr_SetString(PyExc_SystemError,                      \
-                                    #SLOT " must be specified earlier");    \
-                    goto error;                                             \
-                }                                                           \
                 if (freethreading_abi) {                                    \
-                    ftcompat_token.def_ft.MEMBER = (TYPE)(slot->value);     \
+                    if (ftcompat_token.def_ft.DEF_MEMBER) {                 \
+                        PyErr_SetString(PyExc_SystemError,                  \
+                                        #SLOT " must be not be repeated");  \
+                        goto error;                                         \
+                    }                                                       \
+                    ftcompat_token.def_ft.DEF_MEMBER =                      \
+                        (TYPE)(slot->SL_MEMBER);                            \
                 } else {                                                    \
-                    ftcompat_token.def_gil.MEMBER = (TYPE)(slot->value);    \
+                    if (ftcompat_token.def_gil.DEF_MEMBER) {                \
+                        PyErr_SetString(PyExc_SystemError,                  \
+                                        #SLOT " must be not be repeated");  \
+                        goto error;                                         \
+                    }                                                       \
+                    ftcompat_token.def_gil.DEF_MEMBER =                     \
+                        (TYPE)(slot->SL_MEMBER);                            \
                 }                                                           \
                 break;                                                      \
             /////////////////////////////////////////////////////////////////
-        COPYSLOT_CASE(Py_mod_name, m_name, char*)
-        COPYSLOT_CASE(Py_mod_doc, m_doc, char*)
-        COPYSLOT_CASE(Py_mod_state_size, m_size, Py_ssize_t)
-        COPYSLOT_CASE(Py_mod_methods, m_methods, PyMethodDef*)
-        COPYSLOT_CASE(Py_mod_state_traverse, m_traverse, traverseproc)
-        COPYSLOT_CASE(Py_mod_state_clear, m_clear, inquiry)
-        COPYSLOT_CASE(Py_mod_state_free, m_free, freefunc)
+        COPYSLOT_CASE(Py_mod_name, m_name, sl_ptr, char*)
+        COPYSLOT_CASE(Py_mod_doc, m_doc, sl_ptr, char*)
+        COPYSLOT_CASE(Py_mod_state_size, m_size, sl_size, Py_ssize_t)
+        COPYSLOT_CASE(Py_mod_methods, m_methods, sl_func, PyMethodDef*)
+        COPYSLOT_CASE(Py_mod_state_traverse, m_traverse, sl_func, traverseproc)
+        COPYSLOT_CASE(Py_mod_state_clear, m_clear, sl_func, inquiry)
+        COPYSLOT_CASE(Py_mod_state_free, m_free, sl_func, freefunc)
+        COPYSLOT_CASE(Py_mod_slots, m_slots, sl_ptr, PyModuleDef_Slot*)
 #       undef COPYSLOT_CASE
         case Py_mod_token:
             // With PyInit_, the PyModuleDef is used as the token.
-            if (!copying_slots) {
-                PyErr_SetString(PyExc_SystemError,
-                                "Py_mod_token must be specified earlier");
-                goto error;
-            }
-            if (slot->value != &ftcompat_token) {
+            if (slot->sl_ptr != &ftcompat_token) {
                 PyErr_SetString(PyExc_SystemError,
                                 "Py_mod_token must be set to "
                                 "&ftcompat_token");
@@ -253,25 +254,20 @@ FTCOMPAT_APPEND_MODNAME(PyInit_)(void)
             break;
         case Py_mod_abi:
             // Py_mod_abi is ignored.
-            if (!copying_slots) {
-                PyErr_SetString(PyExc_SystemError,
-                                "Py_mod_abi must be specified earlier");
-                goto error;
-            }
             break;
+        case Py_slot_subslots:
+            PyErr_SetString(
+                PyExc_SystemError,
+                "Py_slot_subslots is not allowed.");
+            return NULL;
         default:
-            // The remaining slots become m_slots in the def.
-            // (`slot` now points to the "rest" of the original
-            //  zero-terminated array.)
-            if (copying_slots) {
-                if (freethreading_abi) {
-                    ftcompat_token.def_ft.m_slots = slot;
-                } else {
-                    ftcompat_token.def_gil.m_slots = slot;
-                }
+            if (slot->sl_flags & PySlot_OPTIONAL) {
+                break;
             }
-            copying_slots = 0;
-            break;
+            PyErr_SetString(
+                PyExc_SystemError,
+                "Slot %d must be marked PySlot_OPTIONAL");
+            return NULL;
         }
     }
     is_set_up = 1;

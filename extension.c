@@ -2,6 +2,7 @@
 Example module from PEP 793, further modified for compatibility
 */
 
+#define Py_TARGET_ABI3T 0x030f0000
 #include <Python.h>
 
 #define FTCOMPAT_MODNAME abi3_abi3t_universal
@@ -34,15 +35,18 @@ extension_exec(PyObject *module) {
 PyDoc_STRVAR(extension_doc, "Example extension.");
 PyABIInfo_VAR(abi_info);
 
-static PyModuleDef_Slot extension_slots[] = {
-    {Py_mod_abi, (void*)&abi_info},
-    {Py_mod_name, "abi3_abi3t_universal"},
-    {Py_mod_doc, (char*)extension_doc},
-    {Py_mod_methods, extension_methods},
-    {Py_mod_state_size, (void*)sizeof(extension_state)},
-    {Py_mod_exec, (void*)extension_exec},
-    {Py_mod_gil, (void*)Py_MOD_GIL_NOT_USED},
-    {0}
+static PySlot extension_slots[] = {
+    PySlot_STATIC_DATA(Py_mod_abi, &abi_info),
+    PySlot_STATIC_DATA(Py_mod_name, "abi3_abi3t_universal"),
+    PySlot_STATIC_DATA(Py_mod_doc, (void*)extension_doc),
+    PySlot_STATIC_DATA(Py_mod_methods, extension_methods),
+    PySlot_SIZE(Py_mod_state_size, sizeof(extension_state)),
+    PySlot_STATIC_DATA(Py_mod_slots, ((PyModuleDef_Slot[]) {
+        {Py_mod_exec, extension_exec},
+        {Py_mod_gil, Py_MOD_GIL_NOT_USED},
+        {0},
+    })),
+    PySlot_END
 };
 
 // Avoid "implicit declaration of function" warning:
