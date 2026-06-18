@@ -21,10 +21,8 @@
  * Note that the shim will call your PyModExport_* hook with NULL as the "spec"
  * argument.
  *
- * The shim should be ABI-compatible with Python 3.5 to 3.14 and free-threaded
- * builds of 3.13 & 3.14, *if* compiled with opaque PyObject structs (to
- * ensure that, for example, `Py_INCREF` calls an ABI function rather than
- * access a PyObject member).
+ * The shim should be ABI-compatible with Python 3.13+, both free-threaded
+ * and GIL-enabled builds. CPython 3.15+ is required to compile it.
  */
 
 #include <string.h>     // for memset
