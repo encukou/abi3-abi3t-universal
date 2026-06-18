@@ -54,16 +54,16 @@ are required due to DLL linkage details.
 
 This project builds two wheels:
 
-- abi3_abi3t_universal-0.1.1-cp313-**abi3**-win_amd64.whl
-- abi3_abi3t_universal-0.1.1-cp313-**abi3t**-win_amd64.whl
+- abi3_abi3t_universal-0.2-cp313-**abi3**-win_amd64.whl
+- abi3_abi3t_universal-0.2-cp313-**abi3t**-win_amd64.whl
 
 For real libraries, it might be more practical to build 4 wheels,
 three of which can be dropped when 3.13 & 3.14 support is removed:
 
-- abi3_abi3t_universal-0.1.1-**cp313-cp313t**-win_amd64.whl (for 3.13 FT)
-- abi3_abi3t_universal-0.1.1-**cp314-cp314t**-win_amd64.whl (for 3.14 FT)
-- abi3_abi3t_universal-0.1.1-cp313-abi3-win_amd64.whl  (for 3.13 GIL & 3.14 GIL)
-- abi3_abi3t_universal-0.1.1-**cp315**-abi3.abi3t-win_amd64.whl (3.15+)
+- abi3_abi3t_universal-0.2-**cp313-cp313t**-win_amd64.whl (for 3.13 FT)
+- abi3_abi3t_universal-0.2-**cp314-cp314t**-win_amd64.whl (for 3.14 FT)
+- abi3_abi3t_universal-0.2-cp313-abi3-win_amd64.whl  (for 3.13 GIL & 3.14 GIL)
+- abi3_abi3t_universal-0.2-**cp315**-abi3.abi3t-win_amd64.whl (3.15+)
 
 (The first two can be merged into **cp313.cp314-cp313t.cp314t** but I'd be
 a bit worried about tool support for such a tag.)
