@@ -18,7 +18,7 @@ this demo.)
 The file ``ft_compat.h`` contains the compatibility shim needed to make the
 new API necessary for ``abi3t`` (PEP 793 ``PyModExport`` & PEP 803 ``PySlot``)
 work on older versions of Python.
-It's intended to be reusable, and includes usage comment.
+It's intended to be reusable, and includes a usage comment.
 
 Note that the extension must be *compiled* with CPython 3.15+.
 
@@ -47,6 +47,8 @@ mostly to demo module state.
 As `abi3t` is not widely supported in build tools at
 the time of writing, we use Setuptools, and reach into its internals
 to select the appropriate tags.
+
+### Windows
 
 On Windows, until CPython 3.15.0b2, separate `abi3` and `abi3t` wheels
 are required due to DLL linkage details.
