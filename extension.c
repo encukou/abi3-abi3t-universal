@@ -2,7 +2,9 @@
 Example module from PEP 793, further modified for compatibility
 */
 
-#define Py_TARGET_ABI3T 0x030f0000
+// Note: the build tool should
+// #define Py_TARGET_ABI3T 0x030f0000
+
 #include <Python.h>
 
 #define FTCOMPAT_MODNAME abi3_abi3t_universal

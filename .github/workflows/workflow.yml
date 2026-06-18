@@ -13,17 +13,24 @@ jobs:
         - name: linux
           os: ubuntu-24.04
           freethreaded: false
+          env: ""
         - name: macos
           os: macos-latest
           freethreaded: false
-        - name: windows-gil
+          env: ""
+        - name: windows-abi3
           os: windows-latest
           freethreaded: false
-        - name: windows-t
+          env: "DONT_USE_ABI3T=1"
+        - name: windows-abi3t
           os: windows-latest
           freethreaded: true
+          env: ""
     runs-on: ${{ matrix.os }}
     steps:
+    - name: Set environment variable
+      run: echo "${{ matrix.env }}" >> $GITHUB_ENV
+      shell: bash
     - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       with:
         persist-credentials: false
@@ -47,13 +54,13 @@ jobs:
         name: wheel-${{ matrix.name }}
         path: './dist/*.whl'
   test:
-    name: "Test on ${{ matrix.os }}: ${{ matrix.python-version }} (${{ case(matrix.freethreaded, 'FT', 'GIL') }})"
+    name: "Test on ${{ matrix.name }}: ${{ matrix.python-version }} (${{ case(matrix.freethreaded, 'FT', 'GIL') }})"
     needs: build
     permissions:
       contents: read
     strategy:
       matrix:
-        name: [linux, macos, windows-gil, windows-t]
+        name: [linux, macos, windows-abi3, windows-abi3t]
         python-version: ['3.13', '3.14', '3.15.0-beta.2']
         freethreaded: [true, false]
         include:
@@ -61,14 +68,14 @@ jobs:
           os: ubuntu-24.04
         - name: macos
           os: macos-latest
-        - name: windows-gil
+        - name: windows-abi3
           os: windows-latest
-        - name: windows-t
+        - name: windows-abi3t
           os: windows-latest
         exclude:
-        - name: windows-gil
+        - name: windows-abi3
           freethreaded: true
-        - name: windows-t
+        - name: windows-abi3t
           freethreaded: false
       fail-fast: false
     runs-on: ${{ matrix.os }}

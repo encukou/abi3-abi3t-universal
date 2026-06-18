@@ -49,6 +49,7 @@ for pyver in '3.13', '3.13t', '3.14', '3.14t', '3.15', '3.15t', None:
         run(outer_python, '--version')
         run(outer_python, '-m', 'venv', VENVDIR)
         venv_python = VENVDIR / 'bin/python'
+        run(venv_python, '-m', 'pip', 'install', '--upgrade', 'pip')
         run(venv_python, '-m', 'pip', 'install', wheel)
         result = run(venv_python, TESTSCRIPT, stdout=subprocess.PIPE)
         print(result.stdout)
@@ -56,7 +57,7 @@ for pyver in '3.13', '3.13t', '3.14', '3.14t', '3.15', '3.15t', None:
             raise AssertionError('bad output')
     except Exception as e:
         exceptions.append(e)
-        e.add_note(pyver)
+        e.add_note(str(pyver))
         print()
         print(pyver)
         traceback.print_exc()
